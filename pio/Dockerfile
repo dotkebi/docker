@@ -12,59 +12,25 @@ RUN apt-get -y install git
 RUN apt-get -y install curl
 RUN apt-get -y install build-essential
 
-CMD "sh" "-c" "echo nameserver 8.8.8.8 > /etc/resolv.conf"
-
+#############################################################################################################################
 # install python2.7
-#RUN apt-get -y install python2.7
-# remove several traces of debian python
-RUN apt-get purge -y python.*
-
-# http://bugs.python.org/issue19846
-# > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
-ENV LANG C.UTF-8
-
-# gpg: key 18ADD4FF: public key "Benjamin Peterson <benjamin@python.org>" imported
-ENV GPG_KEY C01E1CAD5EA2C4F0B8E3571504C367C218ADD4FF
-
-ENV PYTHON_VERSION 2.7.11
-
-# if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
-ENV PYTHON_PIP_VERSION 8.1.2
-
-RUN set -ex \
-	&& curl -fSL "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz" -o python.tar.xz \
-	&& curl -fSL "https://www.python.org/ftp/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc" -o python.tar.xz.asc \
-	&& export GNUPGHOME="$(mktemp -d)" \
-	&& gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$GPG_KEY" \
-	&& gpg --batch --verify python.tar.xz.asc python.tar.xz \
-	&& rm -r "$GNUPGHOME" python.tar.xz.asc \
-	&& mkdir -p /usr/src/python \
-	&& tar -xJC /usr/src/python --strip-components=1 -f python.tar.xz \
-	&& rm python.tar.xz \
-	\
-	&& cd /usr/src/python \
-	&& ./configure --enable-shared --enable-unicode=ucs4 \
-	&& make -j$(nproc) \
-	&& make install \
-	&& ldconfig \
-	&& curl -fSL 'https://bootstrap.pypa.io/get-pip.py' | python2 \
-	&& pip install --no-cache-dir --upgrade pip==$PYTHON_PIP_VERSION \
-	&& find /usr/local -depth \
-		\( \
-		    \( -type d -a -name test -o -name tests \) \
-		    -o \
-		    \( -type f -a -name '*.pyc' -o -name '*.pyo' \) \
-		\) -exec rm -rf '{}' + \
-	&& rm -rf /usr/src/python ~/.cache
-
-# install "virtualenv", since the vast majority of users of this image will want it
+#############################################################################################################################
+RUN apt-get -y install python2.7
+RUN apt-get -y install python-setuptools
+RUN apt-get -y install python-pip
+RUN pip install --upgrade pip
 # RUN pip install --no-cache-dir virtualenv
 
-RUN pip install lxml
 RUN pip install BeautifulSoup4
 RUN pip install requests
+RUN apt-get -y install libxml2-dev libxslt1-dev python-dev
+RUN apt-get -y install zlib1g-dev
+RUN pip install --no-cache-dir lxml
 
+#############################################################################################################################
 # install mysql
+#############################################################################################################################
+
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 RUN groupadd -r mysql && useradd -r -g mysql mysql
 
@@ -121,28 +87,29 @@ RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/mysql/my.cnf \
 
 VOLUME /var/lib/mysql
 
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
-ENTRYPOINT ["docker-entrypoint.sh"]
+#COPY docker-entrypoint.sh /usr/local/bin/
+#RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
+#ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 3306
-CMD ["mysqld"]
+#CMD ["mysqld"]
 
+#############################################################################################################################
 # install apache
-"""
-RUN apt-get -qq -y install apache2
-ENV APACHE_RUN_USER   www-data
-ENV APACHE_RUN_GROUP  www-data
-ENV APACHE_PID_FILE   /var/run/apache2.pid
-ENV APACHE_RUN_DIR    /var/run/apache2
-ENV APACHE_LOCK_DIR   /var/lock/apache2
-ENV APACHE_LOG_DIR    /var/log/apache2
-ENV LANG              C
-RUN a2enmod rewrite
+#############################################################################################################################
+#
+#RUN apt-get -qq -y install apache2
+#ENV APACHE_RUN_USER   www-data
+#ENV APACHE_RUN_GROUP  www-data
+#ENV APACHE_PID_FILE   /var/run/apache2.pid
+#ENV APACHE_RUN_DIR    /var/run/apache2
+#ENV APACHE_LOCK_DIR   /var/lock/apache2
+#ENV APACHE_LOG_DIR    /var/log/apache2
+#ENV LANG              C
+#RUN a2enmod rewrite
 
-EXPOSE 80
-CMD ["/usr/sbin/apache2", "-D", "FOREGROUND"]
-"""
+#EXPOSE 80
+#CMD ["/usr/sbin/apache2", "-D", "FOREGROUND"]
 
 # add our user and group first to make sure their IDs get assigned consistently, regardless of whatever dependencies get added
 #RUN groupadd -r www-data && useradd -r --create-home -g www-data www-data
@@ -162,7 +129,7 @@ RUN apt-get update \
 		libaprutil1-ldap \
 		libapr1-dev \
 		libaprutil1-dev \
-		libpcre++0 \
+		libpcre++0v5 \
 		libssl1.0.0 \
 	&& rm -r /var/lib/apt/lists/*
 
@@ -212,10 +179,19 @@ RUN buildDeps=' \
 	\
 	&& apt-get purge -y --auto-remove $buildDeps
 
-COPY httpd-foreground /usr/local/bin/
+# COPY httpd-foreground /usr/local/bin/
 
 EXPOSE 80
-CMD ["httpd-foreground"]
+#CMD ["httpd-foreground"]
 
+#############################################################################################################################
+# php
+#############################################################################################################################
+#RUN apt-get -y install apt-file
+#RUN apt-get -y install software-properties-common
+#RUN apt-get -y install python-software-properties
+#RUN add-apt-repository ppa:ondrej/php5-5.6
+#RUN apt-get update
+#RUN apt-get -y install php5
 # install vim
-RUN apt-get -y install vim
+# RUN apt-get -y install vim
