@@ -103,6 +103,7 @@ RUN wget http://dev.mysql.com/get/mysql-apt-config_0.3.2-1ubuntu14.04_all.deb
 RUN dpkg -i mysql-apt-config_0.3.2-1ubuntu14.04_all.deb
 RUN apt-get update
 RUN apt-get -y install mysql-server
+EXPOSE 3306
 
 #############################################################################################################################
 # php
@@ -112,3 +113,5 @@ RUN apt-get -y install python-software-properties software-properties-common
 RUN add-apt-repository ppa:ondrej/php5-5.6
 RUN apt-get -y install php5
 
+EXPOSE 22
+EXPOSE 443

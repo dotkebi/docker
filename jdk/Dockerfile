@@ -89,8 +89,7 @@ RUN buildDeps=' \
 COPY httpd-foreground /usr/local/bin/
 
 EXPOSE 80
-CMD ["httpd-foreground"]
-
+#CMD ["httpd-foreground"]
 
 #############################################################################################################################
 # install openjdk8
@@ -313,5 +312,5 @@ RUN ln -s usr/local/bin/docker-entrypoint.sh /entrypoint.sh # backwards compat
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 3306
-CMD ["mysqld"]
+# CMD ["mysqld"]
 
