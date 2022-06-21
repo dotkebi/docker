@@ -1,0 +1,25 @@
+version: "3.4"
+
+volumes:
+  kylin_data_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: c:\dev\docker\kyrin\data
+      o: bind
+
+services:
+  kyrin:
+    image: apachekylin/apache-kylin-standalone:4.0.0
+    container_name: apachekylin
+    restart: always
+    ports:
+      - "7070:7070"
+      - "8088:8088"
+      - "50070:50070"
+      - "8032:8032"
+      - "8042:8042"
+      - "16010:16010"
+    mem_limit: "8g"
+    volumes:
+      - kylin_data_volume:/data
